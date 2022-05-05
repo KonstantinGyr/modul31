@@ -1,0 +1,3 @@
+C:/Users/Kot/CLionProjects/hw31/shared_ptr_toy/cmake-build-debug/CMakeFiles/shared_ptr_toy.dir
+C:/Users/Kot/CLionProjects/hw31/shared_ptr_toy/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/Kot/CLionProjects/hw31/shared_ptr_toy/cmake-build-debug/CMakeFiles/rebuild_cache.dir
