@@ -1,26 +1,18 @@
 #include <iostream>
-#include <vector>
-#include <mutex>
-#include <map>
 
-std::map<std::string,int> toys;
-std::mutex toys_access;
-
-void toyCount(std::string toyName){
-    toys_access.lock();
-    if(toys.empty()){
-        toys.insert(std::pair<std::string,int>(toyName,1));
+class ControlBlock{
+public:
+    int count=0;
+    ControlBlock(int _count){
+        count+=_count;
     }
-    else {
-        auto it = toys.find(toyName);
-        if (it->first == toyName) {
-            it->second++;
-        } else {
-            toys.insert(std::pair<std::string, int>(toyName, 1));
-        }
+    void setCount(int inCount){
+        count+= inCount;
     }
-    toys_access.unlock();
-}
+    int getCount(){
+        return count;
+    }
+};
 
 class Toy {
 public:
@@ -35,33 +27,35 @@ public:
 
 class shared_ptr_toy{
     Toy*obj;
+    ControlBlock* block;
 public:
     shared_ptr_toy(){
         obj=new Toy("someToy");
-        toyCount("someToy");
+        block=new ControlBlock(1);
     };
     shared_ptr_toy(std::string name){
         obj=new Toy(name);
-        toyCount(name);
+        block=new ControlBlock(1);
     }
     shared_ptr_toy(const shared_ptr_toy& other){
+        other.block->setCount(-1);
         obj= new Toy(*other.obj);
-        toyCount(other.obj->name);
+        block=new ControlBlock(1);
     }
     shared_ptr_toy& operator=(const shared_ptr_toy& other){
-        toyCount(other.obj->name);
         if(this==&other){
             return *this;
         }
         if(obj!= nullptr) delete obj;
         obj=new Toy(*other.obj);
+        block=new ControlBlock(1);
         return *this;
     }
-    std::string getName(){
-        return obj->name;
-    }
     ~shared_ptr_toy(){
-        delete obj;
+        if(block->getCount()==0) {
+            delete block;
+            delete obj;
+        }
     }
 };
 
@@ -75,39 +69,11 @@ shared_ptr_toy make_shared_toy(const shared_ptr_toy in_toy){
     return toy;
 }
 
-class Dog{
-    std::string name;
-    int age;
-    shared_ptr_toy lovelyToy;
-public:
-    Dog(){
-        name = "someDog";
-        age=0;
-        make_shared_toy("someToy");
-    }
-    Dog(std::string inName,int inAge,shared_ptr_toy &inToy):name(inName),lovelyToy(inToy)
-    {
-        if(inAge>=0&&inAge<30){
-          age=inAge;
-        }
-    }
-};
-void getCount( shared_ptr_toy &some){
-    toys_access.lock();
-    auto it=toys.find(some.getName());
-    std::cout<<it->first<<" "<<it->second<<" strong refs."<<std::endl;
-    toys_access.unlock();
-}
-
 int main() {
-    shared_ptr_toy  noname;
-    shared_ptr_toy ball= make_shared_toy("ball");
-    shared_ptr_toy bone= make_shared_toy("bone");
-    shared_ptr_toy ball2(ball);
-    Dog a ("Sharik",10,ball);
-    Dog b ("Tuzik",11,bone);
-    getCount(bone);
-    getCount(ball);
-    getCount(noname);
+    shared_ptr_toy  noname;                               //count=1
+    shared_ptr_toy ball= make_shared_toy("ball"); //count=0
+    shared_ptr_toy bone= make_shared_toy("bone"); //count=1
+    shared_ptr_toy bone4= make_shared_toy("bone");//count=1
+    shared_ptr_toy ball2(ball);                           //count=1
     return 0;
 }
