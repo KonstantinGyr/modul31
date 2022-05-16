@@ -1,79 +1,120 @@
 #include <iostream>
+#include <string>
+#include <memory>
 
-class ControlBlock{
-public:
-    int count=0;
-    ControlBlock(int _count){
-        count+=_count;
-    }
-    void setCount(int inCount){
-        count+= inCount;
-    }
-    int getCount(){
-        return count;
-    }
-};
+#define MY_SHARED_PTR_REALIZATION
 
-class Toy {
-public:
+class Toy
+{
     std::string name;
-    Toy(){
-        name="someToy";
-    }
-    Toy(std::string inName):name(inName)
+public:
+    Toy (std::string name) : name(name) {
+
+    };
+
+    Toy () : Toy("SomeToy") {
+
+    };
+    const std::string get_name()
     {
+        return name;
+    }
+
+    ~Toy() {
+        std::cout << "D-tor Toy" << std::endl;
     }
 };
 
-class shared_ptr_toy{
-    Toy*obj;
-    ControlBlock* block;
+class shared_ptr_Toy
+{
+    Toy* obj;
+    int* counter;
 public:
-    shared_ptr_toy(){
-        obj=new Toy("someToy");
-        block=new ControlBlock(1);
-    };
-    shared_ptr_toy(std::string name){
-        obj=new Toy(name);
-        block=new ControlBlock(1);
+    shared_ptr_Toy() // I default. C-tor
+    {
+        std::cout << "shared_ptr_Toy::shared_ptr_Toy default C-tor" << std::endl;
+        obj = new Toy("SomeToy");
+        counter = new int(1);
     }
-    shared_ptr_toy(const shared_ptr_toy& other){
-        other.block->setCount(-1);
-        obj= new Toy(*other.obj);
-        block=new ControlBlock(1);
+
+    shared_ptr_Toy(std::string name)
+    {
+        std::cout << "shared_ptr_Toy::shared_ptr_Toy string C-tor" << std::endl;
+        obj = new Toy(name);
+        counter = new int(1);
     }
-    shared_ptr_toy& operator=(const shared_ptr_toy& other){
-        if(this==&other){
+
+    shared_ptr_Toy(Toy* toy)
+    {
+        std::cout << "shared_ptr_Toy::shared_ptr_Toy Toy C-tor" << std::endl;
+        obj = toy;
+        counter = new int(1);
+    }
+
+    shared_ptr_Toy(const shared_ptr_Toy& oth) // II. Copy C-tor
+    {
+        std::cout << "shared_ptr_Toy::shared_ptr_Toy Copy C-tor" << std::endl;
+        obj = oth.obj;
+        counter = oth.counter;
+        ++*counter;
+    }
+
+    shared_ptr_Toy&  operator=(const shared_ptr_Toy& oth) { // III. Copy assignment
+        std::cout << "shared_ptr_Toy::operator= Copy assignment C-tor" << std::endl;
+        if(this==&oth){
             return *this;
         }
-        if(obj!= nullptr) delete obj;
-        obj=new Toy(*other.obj);
-        block=new ControlBlock(1);
-        return *this;
-    }
-    ~shared_ptr_toy(){
-        if(block->getCount()==0) {
-            delete block;
+        if(obj!=nullptr){
             delete obj;
         }
+            obj=oth.obj;
+            counter = oth.counter;
+            ++*counter;
+            return *this;
+        // TODO Сделать копирующий конструктор
     }
+
+    int use_count() {
+        return *counter;
+    }
+
+    ~shared_ptr_Toy()
+    {
+        --*counter;
+        if(*counter==0){
+            std::cout << "~shared_ptr_Toy D-tor" << std::endl;
+            delete obj;
+            delete counter;
+        }
+        // TODO Сделать деструктор
+     }
 };
 
-shared_ptr_toy make_shared_toy(std::string in_name){
-    shared_ptr_toy toy(in_name);
-    return toy;
+shared_ptr_Toy make_shared_toy(std::string name)
+{
+    shared_ptr_Toy spt(name);
+    return spt;
 }
 
-shared_ptr_toy make_shared_toy(const shared_ptr_toy in_toy){
-    shared_ptr_toy toy(in_toy);
-    return toy;
-}
+
 
 int main() {
-    shared_ptr_toy  noname;                               //count=1
-    shared_ptr_toy ball= make_shared_toy("ball"); //count=0
-    shared_ptr_toy bone= make_shared_toy("bone"); //count=1
-    shared_ptr_toy bone4= make_shared_toy("bone");//count=1
-    shared_ptr_toy ball2(ball);                           //count=1
+#ifdef MY_SHARED_PTR_REALIZATION
+    shared_ptr_Toy ptr = make_shared_toy("Ball");
+    std::cout << "Counter after make_shared = " << ptr.use_count() << std::endl;
+    shared_ptr_Toy ptr2(ptr);
+    std::cout << "Counter after copy C-tor = " <<  ptr.use_count() << std::endl;
+    shared_ptr_Toy ptr3;
+    ptr3 = ptr2;
+    std::cout << "Counter after assignment = " <<  ptr.use_count() << std::endl;
+#else
+    std::shared_ptr<Toy> ptr = std::make_shared<Toy>("Ball");
+    std::cout << "Counter after make_shared = " << ptr.use_count() << std::endl;
+    std::shared_ptr<Toy> ptr2(ptr);
+    std::cout << "Counter after copy C-tor = " <<  ptr.use_count() << std::endl;
+    std::shared_ptr<Toy> ptr3;
+    ptr3 = ptr2;
+    std::cout << "Counter after assignment = " <<  ptr.use_count() << std::endl;
+#endif
     return 0;
 }
