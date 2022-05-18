@@ -59,21 +59,27 @@ public:
         ++*counter;
     }
 
-    shared_ptr_Toy&  operator=(const shared_ptr_Toy& oth) { // III. Copy assignment
+    shared_ptr_Toy&  operator = ( shared_ptr_Toy& oth) { // III. Copy assignment
         std::cout << "shared_ptr_Toy::operator= Copy assignment C-tor" << std::endl;
         if(this==&oth){
             return *this;
         }
         if(obj!=nullptr){
-            delete obj;
-        }
-            obj=oth.obj;
-            counter = oth.counter;
-            ++*counter;
-            return *this;
-        // TODO Сделать копирующий конструктор
+            if(*counter==1){
+              delete obj;
+            }
+            else if(*counter > 1){
+              --*counter;
+            }
+         }
+         obj=oth.obj;
+         counter = oth.counter;
+         ++*counter;
+         return *this;
     }
-
+    void getCount(int n){
+        *counter=*counter+n;
+    }
     int use_count() {
         return *counter;
     }
@@ -82,11 +88,10 @@ public:
     {
         --*counter;
         if(*counter==0){
-            std::cout << "~shared_ptr_Toy D-tor" << std::endl;
+            std::cout << "~shared_ptr_Toy D-tor: " <<obj->get_name()<< std::endl;
             delete obj;
             delete counter;
         }
-        // TODO Сделать деструктор
      }
 };
 
@@ -95,7 +100,6 @@ shared_ptr_Toy make_shared_toy(std::string name)
     shared_ptr_Toy spt(name);
     return spt;
 }
-
 
 
 int main() {
@@ -107,6 +111,9 @@ int main() {
     shared_ptr_Toy ptr3;
     ptr3 = ptr2;
     std::cout << "Counter after assignment = " <<  ptr.use_count() << std::endl;
+    shared_ptr_Toy ptr_Bone = make_shared_toy("Bone");
+    ptr = ptr_Bone;
+    std::cout<<"counters ptr and ptr_Bone "<<ptr.use_count()<<" "<< ptr_Bone.use_count() << std::endl;
 #else
     std::shared_ptr<Toy> ptr = std::make_shared<Toy>("Ball");
     std::cout << "Counter after make_shared = " << ptr.use_count() << std::endl;
@@ -115,6 +122,9 @@ int main() {
     std::shared_ptr<Toy> ptr3;
     ptr3 = ptr2;
     std::cout << "Counter after assignment = " <<  ptr.use_count() << std::endl;
+    std::shared_ptr<Toy> ptr_Bone = std::make_shared<Toy>("Bone");
+    ptr3 = ptr_Bone;
+    std::cout<<"counters ptr and ptr_Bone "<<ptr.use_count()<<" "<< ptr_Bone.use_count() << std::endl;
 #endif
     return 0;
 }
